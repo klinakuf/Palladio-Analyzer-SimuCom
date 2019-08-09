@@ -22,6 +22,7 @@ import de.uka.ipd.sdq.simulation.SimulationResult;
 import de.uka.ipd.sdq.simulation.abstractsimengine.AbstractSimProcessDelegator;
 import de.uka.ipd.sdq.simulation.abstractsimengine.ISimProcess;
 import de.uka.ipd.sdq.simulation.abstractsimengine.ISimProcessListener;
+import de.uka.ipd.sdq.simulation.abstractsimengine.events.SimProcessNonBlockingStrategy;
 
 public abstract class SimuComSimProcess extends AbstractSimProcessDelegator implements ISchedulableProcess,
         ISimProcessListener {
@@ -65,6 +66,22 @@ public abstract class SimuComSimProcess extends AbstractSimProcessDelegator impl
 
     protected SimuComSimProcess(final SimuComModel model, final String name, final RequestContext parentRequestContext) {
         super(model, name);
+        this.isDebug = model.getConfiguration().isDebug();
+        this.delayResource = new SimDelayResource(model, name + "_thinktime", name + "_thinktime");
+        requestContext = new RequestContext(Long.valueOf(getRawId()).toString(), parentRequestContext);
+
+        // add a process listener in order to get notified when this process is about to be
+        // suspended or resumed again.
+        this.addProcessListener(this);
+
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Create SimuComSimProcess with id " + getRawId() + " ["+this.getId()+"]");
+        }
+    }
+    
+    // isEventBased flag is just introduced to distinguish between a non-blocking simucomsimprocess and a process blocking one
+    protected SimuComSimProcess(final SimuComModel model, final String name, final RequestContext parentRequestContext, final boolean isEventBased) {
+        super(model, name, new SimProcessNonBlockingStrategy());
         this.isDebug = model.getConfiguration().isDebug();
         this.delayResource = new SimDelayResource(model, name + "_thinktime", name + "_thinktime");
         requestContext = new RequestContext(Long.valueOf(getRawId()).toString(), parentRequestContext);
